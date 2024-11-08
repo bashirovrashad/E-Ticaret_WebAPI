@@ -1,0 +1,194 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sepetim</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Genel stil ayarları */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #343a40;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #fff;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+            .cart-item:hover {
+                transform: scale(1.02);
+            }
+
+            .cart-item img {
+                max-width: 80px;
+                border-radius: 8px;
+            }
+
+        .cart-item-details h3 {
+            font-size: 1.2em;
+            color: #495057;
+        }
+
+        .cart-item-details p {
+            margin: 5px 0;
+            color: #6c757d;
+        }
+
+        .btn-danger {
+            background-color: #ff6b6b;
+            border: none;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+            .btn-danger:hover {
+                background-color: #ff4a4a;
+            }
+
+        #total-price {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #343a40;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Səbətim</h1>
+    <div id="total-price">Ümumi Qiymət: 0 AZN</div>
+    <div id="cart-items-container">Yüklənir...</div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const login_userid = urlParams.get('login_userid');
+        let cartId = null;
+
+        async function fetchCartByUserId() {
+            try {
+                const response = await fetch(`/api/Cart`);
+                const carts = await response.json();
+
+                for (const cart of carts) {
+                    if (cart.userId == login_userid) {
+                        cartId = cart.id;
+                        break;
+                    }
+                }
+
+                if (cartId) {
+                    fetchCartItems(cartId);
+                } else {
+                    document.getElementById('cart-items-container').innerText = "Səbət Tapılmadı.";
+                }
+            } catch (error) {
+                console.error("Səbət alınarkən xəta baş verdi:", error);
+                document.getElementById('cart-items-container').innerText = "Səbət alınarkən xəta baş verdi.";
+            }
+        }
+
+        async function fetchCartItems(cartId) {
+            try {
+                const response = await fetch(`/api/CartItem`);
+                const allCartItems = await response.json();
+                const cartItems = allCartItems.filter(item => item.cartId == cartId);
+                displayCartItems(cartItems);
+            } catch (error) {
+                console.error("Sepet öğeleri alınırken hata oluştu:", error);
+                document.getElementById('cart-items-container').innerText = "Səbətdəki məhsullar alınarkən xəta baş verdi.";
+            }
+        }
+
+        async function displayCartItems(cartItems) {
+            const container = document.getElementById('cart-items-container');
+            container.innerHTML = '';
+            let totalPrice = 0;
+
+            if (cartItems.length === 0) {
+                container.innerText = "Səbətiniz Boşdur.";
+                document.getElementById('total-price').innerText = "Ümumi Qiymət: 0 AZN";
+                return;
+            }
+
+            try {
+                const productResponse = await fetch(`/api/Product`);
+                const products = await productResponse.json();
+
+                cartItems.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'cart-item';
+
+                    const product = products.find(p => p.id == item.productId);
+                    const productName = product ? product.name : "Məhsul adı tapılmadı";
+                    const productPrice = product ? product.price : 0;
+                    const productImage = product ? product.imageUrl : "";
+
+                    totalPrice += productPrice * item.quantity;
+
+                    itemDiv.innerHTML = `
+                            <img src="${productImage}" alt="${productName}" />
+                            <div class="cart-item-details">
+                                <h3>${productName}</h3>
+                                <p><strong>Qiymət:</strong> ${productPrice} AZN</p>
+                                <p><strong>Məhsul sayı:</strong> ${item.quantity}</p>
+                            </div>
+                            <button class="btn btn-danger" onclick="deleteCartItem(${item.id})">Sil</button>
+                        `;
+
+                    container.appendChild(itemDiv);
+                });
+
+                document.getElementById('total-price').innerText = `Ümumi Qiymət: ${totalPrice} AZN`;
+            } catch (error) {
+                console.error("Ürün bilgileri alınırken hata oluştu:", error);
+                container.innerText = "Məhsul məlumatları  alınarkən xəta baş verdi.";
+            }
+        }
+
+        async function deleteCartItem(cartItemId) {
+            try {
+                const response = await fetch(`/api/CartItem/${cartItemId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    fetchCartItems(cartId);
+                } else {
+                    console.error("Ürün silinemedi:", response.statusText);
+                }
+            } catch (error) {
+                console.error("Silme işlemi sırasında hata oluştu:", error);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", fetchCartByUserId);
+    </script>
+</body>
+</html>
+
+
+
+
+
+

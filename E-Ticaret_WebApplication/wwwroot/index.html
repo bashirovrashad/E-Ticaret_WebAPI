@@ -1,0 +1,459 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dinamik Kategoriler ve Ürünler</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Genel Stil Ayarları */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+
+        /* Başlık ve Giriş Butonları */
+        .header {
+            display: flex;
+            justify-content: flex-end;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        #login-btn, #signup-btn {
+            margin-right: 10px;
+            padding: 10px 25px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+
+            #login-btn:hover, #signup-btn:hover {
+                background-color: #0056b3;
+            }
+
+        /* Kategoriler */
+        #categories-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 20px;
+            justify-content: center;
+        }
+
+        .category-item {
+            flex: 1 1 150px;
+            max-width: 150px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            color: #333;
+        }
+
+            .category-item:hover, .active-category {
+                background-color: #007bff;
+                color: white;
+                box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            }
+
+        /* Ürün Kartları */
+        #products-container {
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .product-card {
+            background-color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            width: 280px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            text-align: center;
+        }
+
+            .product-card:hover {
+                transform: scale(1.05);
+                box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+            }
+
+        .product-img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .product-info {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #555;
+        }
+
+            .product-info p {
+                margin: 5px 0;
+            }
+
+        /* Modal İçin Stil */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .modal-body label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .close-btn, .submit-btn {
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            background-color: #dc3545;
+        }
+
+        .submit-btn {
+            background-color: #007bff;
+        }
+
+        .close-btn:hover {
+            background-color: #b52a3b;
+        }
+
+        .submit-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <button id="login-btn">Giriş</button>
+    <button id="signup-btn">Hesab Yarat</button>
+</div>
+<div id="categories-container"></div>
+<div id="products-container"></div>
+<div id="signup-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Hesab Yarat</h2>
+        </div>
+        <div class="modal-body">
+            <label for="username">İstifadəçi Adı:</label>
+            <input type="text" id="username" class="form-control mb-3">
+            <label for="email">Email:</label>
+            <input type="email" id="email" class="form-control mb-3">
+            <label for="password">Şifrə:</label>
+            <input type="password" id="password" class="form-control mb-3">
+        </div>
+        <div class="modal-footer">
+            <button class="close-btn" onclick="closeSignupModal()">Ləğv et</button>
+            <button class="submit-btn" onclick="submitSignup()">Davam et</button>
+        </div>
+    </div>
+</div>
+<div id="login-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Giriş Et</h2>
+            </div>
+            <div class="modal-body">
+                <label for="login-username">İstifadəçi Adı:</label>
+                <input type="text" id="login-username" class="form-control mb-3">
+                <label for="login-password">Şifrə:</label>
+                <input type="password" id="login-password" class="form-control mb-3">
+            </div>
+            <div class="modal-footer">
+                <button class="close-btn" onclick="closeLoginModal()">Ləğv et</button>
+                <button class="submit-btn" onclick="submitLogin()">Davam et</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allProducts = [];
+        let categories = [];
+
+        async function fetchCategories() {
+            try {
+                const response = await fetch('/api/Category');
+                categories = await response.json();
+                const container = document.getElementById('categories-container');
+                container.innerHTML = '';
+
+                // Tüm Kategoriler Butonu
+                const allCategoriesDiv = document.createElement('div');
+                allCategoriesDiv.className = 'category-item';
+                allCategoriesDiv.innerText = 'Bütün Kateqoriyalar';
+                allCategoriesDiv.onclick = () => {
+                    document.querySelectorAll('.category-item').forEach(el => el.classList.remove('active-category'));
+                    allCategoriesDiv.classList.add('active-category');
+                    displayProducts(allProducts);
+                };
+                container.appendChild(allCategoriesDiv);
+
+                // Her kategori için buton ekleme
+                categories.forEach(category => {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'category-item';
+                    categoryDiv.innerText = category.name;
+                    categoryDiv.onclick = () => {
+                        document.querySelectorAll('.category-item').forEach(el => el.classList.remove('active-category'));
+                        categoryDiv.classList.add('active-category');
+                        displayProducts(allProducts.filter(p => p.categoryId === category.id));
+                    };
+                    container.appendChild(categoryDiv);
+                });
+            } catch (error) {
+                console.error("Kategoriler alınırken hata oluştu:", error);
+            }
+        }
+
+        async function fetchProducts() {
+            try {
+                const response = await fetch('/api/Product');
+                allProducts = await response.json();
+                displayProducts(allProducts);
+            } catch (error) {
+                console.error("Ürünler alınırken hata oluştu:", error);
+            }
+        }
+
+        function displayProducts(products) {
+            const container = document.getElementById('products-container');
+            container.innerHTML = '';
+
+            products.forEach(product => {
+                const productCategory = categories.find(cat => cat.id === product.categoryId);
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                productCard.onclick = () => {
+                    window.location.href = `product-detail.html?productId=${product.id}&source=index`;
+                };
+
+                productCard.innerHTML = `
+                             <img src="${product.imageUrl}" alt="${product.name}" class="product-img">
+                             <h3>${product.name}</h3>
+                             <div class="product-info">
+                                 <p><strong>Qiymət:</strong> ${product.price} AZN</p>
+                                 <p><strong>Məhsul sayı:</strong> ${product.stock}</p>
+                                 <p><strong>Əlavə məlumat:</strong> ${product.description}</p>
+                                 <p><strong>Kateqoriya:</strong> ${productCategory ? productCategory.name : 'Bilinmiyor'}</p>
+                             </div>
+                         `;
+                container.appendChild(productCard);
+            });
+        }
+
+        function openSignupModal() {
+            document.getElementById('signup-modal').style.display = 'flex';
+        }
+
+        function closeSignupModal() {
+            document.getElementById('signup-modal').style.display = 'none';
+        }
+
+
+        async function submitSignup() {
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const newUser = {
+                username,
+                email,
+                password
+            };
+
+            try {
+                const response = await fetch('/api/User', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(newUser)
+                });
+
+                if (response.ok) {
+
+                    const usersresponse = await fetch('/api/User');
+
+                    const users = await usersresponse.json();
+                    var user_id;
+
+                    for (const user of users) {
+                        if (user.username === username && user.password === password) {
+                            user_id = user.id;
+                            break; // Döngüyü sonlandır
+                        }
+
+                    }
+                    alert("Hesab yaradıldı.");
+
+                    // Kullanıcı giriş alanlarını temizleme
+                    document.getElementById('username').value = '';
+                    document.getElementById('email').value = '';
+                    document.getElementById('password').value = '';
+                    closeSignupModal();
+
+                    // Kullanıcı kaydı tamamlandıktan sonra Cart ekleme
+                    await addCart(user_id);
+                } else {
+                    alert("Giriş edilə bilmədi. Zəhmət olmasa təkrar yoxlayın.");
+                }
+            } catch (error) {
+                console.error("Kayıt olurken hata oluştu:", error);
+            }
+        }
+        async function addCart(userId) {
+            const cartData = {
+                userId: userId  // Yeni kaydedilen kullanıcının ID'si
+            };
+
+            try {
+                const response = await fetch('/api/Cart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(cartData)
+                });
+
+                if (response.ok) {
+                    console.log("Cart başarıyla eklendi!");
+                } else {
+                    console.error("Cart ekleme başarısız:", response.status);
+                }
+            } catch (error) {
+                console.error("Cart eklenirken hata oluştu:", error);
+            }
+        }
+
+
+
+
+        document.getElementById('signup-btn').addEventListener('click', openSignupModal);
+
+
+
+
+        function openLoginModal() {
+            document.getElementById('login-modal').style.display = 'flex';
+        }
+
+        function closeLoginModal() {
+            document.getElementById('login-modal').style.display = 'none';
+        }
+        var login_userid;
+        // Giriş işlemi
+        async function submitLogin() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                // Kullanıcı listesini Web API'den çekme
+                const response = await fetch('/api/User');
+                if (!response.ok) {
+                    alert("İstifadeçi məlumatları alına bilmədi.");
+                    return;
+                }
+
+                const users = await response.json();
+                let userFound = false;
+
+                // Kullanıcı bilgilerini kontrol etme
+                users.forEach(user => {
+                    if (user.username === username && user.password === password) {
+                        userFound = true;
+                        login_userid = user.id;
+                        document.getElementById('login-username').value = '';
+                        window.location.href = `user.html?login_userid=${login_userid}`;
+
+                    }
+                });
+
+                if (!userFound) {
+                    alert("İstifadəçi adı və ya şifrə səhvdi.");
+                }
+            } catch (error) {
+                console.error("Giriş edilən zaman xəta baş verdi:", error);
+            }
+        }
+
+        // 'Login' butonuna tıklanıldığında modalı aç
+        document.getElementById('login-btn').addEventListener('click', openLoginModal);
+
+
+
+
+
+
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchCategories();
+            fetchProducts();
+        });
+
+
+
+
+
+
+
+
+    </script>
+
+</body>
+</html>
+
+

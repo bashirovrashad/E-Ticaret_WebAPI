@@ -1,0 +1,189 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ürün Detayı</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: Arial, sans-serif;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+        }
+
+        .btn-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .btn-custom {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+            color: #fff;
+            border: none;
+        }
+
+        .btn-back {
+            background-color: #6c757d;
+        }
+
+            .btn-back:hover {
+                background-color: #5a6268;
+            }
+
+        .btn-cart {
+            background-color: #007bff;
+        }
+
+            .btn-cart:hover {
+                background-color: #0056b3;
+            }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            background-color: #fff;
+        }
+
+        .product-image {
+            width: 100%;
+            max-width: 600px;
+            height: auto;
+            object-fit: cover;
+            margin: 0 auto;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .card-body {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .card-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .product-details p {
+            font-size: 18px;
+            color: #555;
+            margin: 10px 0;
+        }
+
+        .product-details strong {
+            font-weight: bold;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="btn-container">
+            <button onclick="window.history.back()" class="btn btn-custom btn-back">Geri</button>
+            <button id="add-to-cart-btn" class="btn btn-custom btn-cart" style="display: none;">Səbətə Əlavə et</button>
+        </div>
+
+        <div id="product-detail-container">
+</div>
+    </div>
+
+    <script>
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const source = getQueryParam("source");
+
+            if (source === "user") {
+                document.getElementById("add-to-cart-btn").style.display = "inline-block";
+            }
+
+            const productId = getQueryParam("productId");
+            fetchProductDetails(productId);
+
+            document.getElementById("add-to-cart-btn").addEventListener("click", async function () {
+                const user_id = getQueryParam("login_userid");
+
+                try {
+                    const cartsResponse = await fetch('/api/Cart');
+                    const carts = await cartsResponse.json();
+                    var cart_id;
+
+                    for (var cart of carts) {
+                        if (cart.userId == user_id) {
+                            cart_id = cart.id;
+                            break;
+                        }
+                    }
+
+                    const cartitemData = {
+                        productId: productId,
+                        quantity: 1,
+                        cartId: cart_id
+                    };
+
+                    const response = await fetch('/api/CartItem', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(cartitemData)
+                    });
+
+                    if (response.ok) {
+                        alert("Məhsul səbətə əlavə edildi.");
+                    } else {
+                        alert("Səbətə əlavə edilərkən xəta baş verdi:", response.statusText);
+                    }
+                } catch (error) {
+                    alert("API istəyi sırasında xəta baş verdi:", error);
+                }
+            });
+        });
+
+        async function fetchProductDetails(productId) {
+            try {
+                const response = await fetch(`/api/Product/${productId}`);
+                const product = await response.json();
+
+                document.getElementById("product-detail-container").innerHTML = `
+                        <div class="card">
+                            <img src="${product.imageUrl}" alt="${product.name}" class="product-image">
+                            <div class="card-body">
+                                <h2 class="card-title">${product.name}</h2>
+                                <div class="product-details">
+                                    <p><strong>Qiymət:</strong> ${product.price} AZN</p>
+                                    <p><strong>Məhsul sayı:</strong> ${product.stock}</p>
+                                    <p><strong>Əlavə məlumat:</strong> ${product.description}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+            } catch (error) {
+                console.error("Ürün detayları alınırken hata oluştu:", error);
+            }
+        }
+    </script>
+</body>
+</html>
+
